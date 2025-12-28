@@ -5,38 +5,24 @@ interface StatCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
-  trend?: {
-    value: number;
-    positive: boolean;
-  };
   className?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, trend, className }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, className }: StatCardProps) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md",
+        "group rounded-2xl bg-card p-6 shadow-soft hover-lift cursor-default",
         className
       )}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-card-foreground">{value}</p>
-          {trend && (
-            <p
-              className={cn(
-                "mt-1 text-sm font-medium",
-                trend.positive ? "text-success" : "text-destructive"
-              )}
-            >
-              {trend.positive ? "+" : "-"}{Math.abs(trend.value)}%
-            </p>
-          )}
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
+          <p className="mt-3 text-3xl font-semibold text-card-foreground tracking-tight">{value}</p>
         </div>
-        <div className="rounded-lg bg-primary/10 p-3">
-          <Icon className="h-6 w-6 text-primary" />
+        <div className="rounded-xl bg-secondary p-2.5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
+          <Icon className="h-5 w-5" strokeWidth={1.5} />
         </div>
       </div>
     </div>

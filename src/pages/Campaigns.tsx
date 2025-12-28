@@ -1,4 +1,4 @@
-import { Plus, Pencil, ExternalLink } from "lucide-react";
+import { Plus, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -11,6 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const mockCampaigns = [
   { id: 1, name: "Product Launch Outreach", status: "active", targets: 450 },
@@ -25,47 +31,54 @@ export default function Campaigns() {
     <div className="animate-fade-in">
       <PageHeader
         title="Campaigns"
-        description="Manage your Instagram DM campaigns"
         action={
           <Link to="/campaigns/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Create Campaign
+              New Campaign
             </Button>
           </Link>
         }
       />
 
-      <div className="p-8">
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="px-8 pb-8">
+        <div className="rounded-2xl bg-card shadow-soft overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Campaign Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Targets</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-xs uppercase tracking-wider">Name</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider">Targets</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockCampaigns.map((campaign) => (
-                <TableRow key={campaign.id}>
+              {mockCampaigns.map((campaign, i) => (
+                <TableRow 
+                  key={campaign.id} 
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${i * 30}ms` }}
+                >
                   <TableCell className="font-medium">{campaign.name}</TableCell>
                   <TableCell>
                     <StatusBadge variant={campaign.status as "active" | "paused" | "draft"}>
-                      {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                      {campaign.status}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell>{campaign.targets.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <TableCell className="text-muted-foreground">{campaign.targets.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-32">
+                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}

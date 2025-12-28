@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Settings, Users, MessageSquare, Instagram, CheckCircle2, Plus, Trash2, Upload } from "lucide-react";
+import { Check, Plus, Trash2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,23 +11,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
-const steps = [
-  { id: 1, title: "Campaign Settings", icon: Settings },
-  { id: 2, title: "Targets", icon: Users },
-  { id: 3, title: "Sequences", icon: MessageSquare },
-  { id: 4, title: "Instagram Accounts", icon: Instagram },
-  { id: 5, title: "Done", icon: CheckCircle2 },
-];
+const steps = ["Settings", "Targets", "Sequences", "Accounts", "Done"];
 
 const mockAccounts = [
-  { id: 1, username: "@brand_official", status: "active", selected: false },
-  { id: 2, username: "@marketing_team", status: "active", selected: false },
-  { id: 3, username: "@sales_dept", status: "paused", selected: false },
+  { id: 1, username: "@brand_official", status: "active" },
+  { id: 2, username: "@marketing_team", status: "active" },
+  { id: 3, username: "@sales_dept", status: "paused" },
 ];
 
 export default function CreateCampaign() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -42,7 +36,7 @@ export default function CreateCampaign() {
   });
 
   const handleNext = () => {
-    if (currentStep < 5) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       navigate("/campaigns");
@@ -50,9 +44,7 @@ export default function CreateCampaign() {
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
   const addVariant = () => {
@@ -89,86 +81,66 @@ export default function CreateCampaign() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="New Campaign" description="Create a new Instagram DM campaign" />
+      <PageHeader title="New Campaign" />
 
-      <div className="p-8">
-        {/* Stepper */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center flex-1">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
-                      currentStep > step.id
-                        ? "border-success bg-success text-success-foreground"
-                        : currentStep === step.id
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-card text-muted-foreground"
-                    )}
-                  >
-                    {currentStep > step.id ? (
-                      <Check className="h-5 w-5" />
-                    ) : (
-                      <step.icon className="h-5 w-5" />
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-sm font-medium hidden md:block",
-                      currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {step.title}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={cn(
-                      "flex-1 h-0.5 mx-4",
-                      currentStep > step.id ? "bg-success" : "bg-border"
-                    )}
-                  />
+      <div className="px-8 pb-8">
+        {/* Minimal Stepper */}
+        <div className="mb-8 flex items-center gap-2">
+          {steps.map((step, i) => (
+            <div key={step} className="flex items-center">
+              <button
+                onClick={() => i < currentStep && setCurrentStep(i)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                  i === currentStep
+                    ? "bg-primary text-primary-foreground"
+                    : i < currentStep
+                    ? "bg-success/10 text-success cursor-pointer hover:bg-success/20"
+                    : "bg-secondary text-muted-foreground"
                 )}
-              </div>
-            ))}
-          </div>
+              >
+                {i < currentStep ? (
+                  <Check className="h-3 w-3" />
+                ) : (
+                  <span className="w-4 text-center">{i + 1}</span>
+                )}
+                <span className="hidden sm:inline">{step}</span>
+              </button>
+              {i < steps.length - 1 && (
+                <div className={cn("w-8 h-px mx-1", i < currentStep ? "bg-success" : "bg-border")} />
+              )}
+            </div>
+          ))}
         </div>
 
-        {/* Step Content */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          {/* Step 1: Campaign Settings */}
-          {currentStep === 1 && (
-            <div className="space-y-6 animate-fade-in">
+        {/* Content */}
+        <div className="rounded-2xl bg-card p-8 shadow-soft">
+          {/* Step 0: Settings */}
+          {currentStep === 0 && (
+            <div className="space-y-6 max-w-xl animate-fade-in">
               <div className="space-y-2">
-                <Label htmlFor="name">Campaign Name</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Name</Label>
                 <Input
-                  id="name"
-                  placeholder="Enter campaign name"
+                  placeholder="Campaign name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Description</Label>
                 <Textarea
-                  id="description"
-                  placeholder="Describe your campaign"
-                  rows={4}
+                  placeholder="What's this campaign about?"
+                  rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <Label>Working Hours</Label>
-                  <p className="text-sm text-muted-foreground">Messages will be sent during these hours</p>
-                </div>
+              <div className="space-y-3">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Working Hours</Label>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                  <span className="text-sm font-mono bg-secondary px-2 py-1 rounded">
                     {formData.workingHoursStart}:00
                   </span>
                   <Slider
@@ -181,32 +153,27 @@ export default function CreateCampaign() {
                     step={1}
                     className="flex-1"
                   />
-                  <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                  <span className="text-sm font-mono bg-secondary px-2 py-1 rounded">
                     {formData.workingHoursEnd}:00
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <Label>Messages Per Day</Label>
-                  <p className="text-sm text-muted-foreground">The number of messages sent by each Instagram account daily</p>
-                </div>
+              <div className="space-y-3">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Messages per Day</Label>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                  <span className="text-sm font-mono bg-secondary px-2 py-1 rounded">
                     {formData.messagesPerDay[0]}
                   </span>
                   <Slider
                     value={formData.messagesPerDay}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, messagesPerDay: value })
-                    }
+                    onValueChange={(value) => setFormData({ ...formData, messagesPerDay: value })}
                     min={1}
                     max={100}
                     step={1}
                     className="flex-1"
                   />
-                  <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                  <span className="text-sm font-mono bg-secondary px-2 py-1 rounded">
                     {formData.messagesPerDay[1]}
                   </span>
                 </div>
@@ -214,255 +181,195 @@ export default function CreateCampaign() {
             </div>
           )}
 
-          {/* Step 2: Targets */}
-          {currentStep === 2 && (
+          {/* Step 1: Targets */}
+          {currentStep === 1 && (
             <div className="space-y-6 animate-fade-in">
-              <Tabs defaultValue="csv">
-                <TabsList className="grid w-full grid-cols-3">
+              <Tabs defaultValue="raw" className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-3">
                   <TabsTrigger value="csv">CSV</TabsTrigger>
                   <TabsTrigger value="raw">RAW</TabsTrigger>
                   <TabsTrigger value="json">JSON</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="csv" className="space-y-4 mt-4">
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                    <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Drag & drop your CSV file here, or click to browse
-                    </p>
-                    <Button variant="outline" className="mt-4">
-                      Upload CSV
-                    </Button>
+                <TabsContent value="csv" className="space-y-4 mt-6">
+                  <div className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer">
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" strokeWidth={1.5} />
+                    <p className="mt-3 text-sm text-muted-foreground">Drop CSV here or click to upload</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="listNameCsv">List Name</Label>
-                    <Input id="listNameCsv" placeholder="Enter list name" />
-                  </div>
-                  <Button className="w-full">Create</Button>
                 </TabsContent>
 
-                <TabsContent value="raw" className="space-y-4 mt-4">
+                <TabsContent value="raw" className="space-y-4 mt-6 max-w-xl">
                   <div className="space-y-2">
-                    <Label htmlFor="rawUsernames">Usernames</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Usernames</Label>
                     <Textarea
-                      id="rawUsernames"
                       placeholder="One username per line"
                       rows={8}
+                      className="font-mono text-sm"
                       value={formData.rawUsernames}
                       onChange={(e) => setFormData({ ...formData, rawUsernames: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="listNameRaw">List Name</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">List Name</Label>
                     <Input
-                      id="listNameRaw"
-                      placeholder="Enter list name"
+                      placeholder="My target list"
                       value={formData.targetListName}
                       onChange={(e) => setFormData({ ...formData, targetListName: e.target.value })}
                     />
                   </div>
-                  <Button className="w-full">Create</Button>
                 </TabsContent>
 
-                <TabsContent value="json" className="space-y-4 mt-4">
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                    <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Upload JSON file with username array
-                    </p>
-                    <Button variant="outline" className="mt-4">
-                      Upload JSON
-                    </Button>
+                <TabsContent value="json" className="space-y-4 mt-6">
+                  <div className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer">
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" strokeWidth={1.5} />
+                    <p className="mt-3 text-sm text-muted-foreground">Drop JSON file here</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="listNameJson">List Name</Label>
-                    <Input id="listNameJson" placeholder="Enter list name" />
-                  </div>
-                  <Button className="w-full">Create</Button>
                 </TabsContent>
               </Tabs>
-
-              {/* Preview Table */}
-              <div className="rounded-lg border border-border">
-                <div className="px-4 py-3 border-b border-border bg-muted/30">
-                  <h3 className="font-medium">Preview</h3>
-                </div>
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  No usernames added yet
-                </div>
-              </div>
             </div>
           )}
 
-          {/* Step 3: Sequences */}
-          {currentStep === 3 && (
+          {/* Step 2: Sequences */}
+          {currentStep === 2 && (
             <div className="space-y-6 animate-fade-in">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">First Message</h3>
-                  <Button variant="outline" onClick={addFollowUp}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Follow-up
-                  </Button>
-                </div>
-
-                <Tabs defaultValue="variant-1">
-                  <TabsList>
-                    {formData.variants.map((variant, index) => (
-                      <TabsTrigger key={variant.id} value={`variant-${index + 1}`}>
-                        Variant {index + 1}
-                      </TabsTrigger>
-                    ))}
-                    {formData.variants.length < 5 && (
-                      <TabsTrigger value="add" onClick={addVariant}>
-                        + Add
-                      </TabsTrigger>
-                    )}
-                  </TabsList>
-
-                  {formData.variants.map((variant, index) => (
-                    <TabsContent key={variant.id} value={`variant-${index + 1}`} className="space-y-4 mt-4">
-                      <Textarea
-                        placeholder="Enter your message..."
-                        rows={6}
-                        value={variant.message}
-                        onChange={(e) => {
-                          const newVariants = [...formData.variants];
-                          newVariants[index].message = e.target.value;
-                          setFormData({ ...formData, variants: newVariants });
-                        }}
-                      />
-                    </TabsContent>
-                  ))}
-                </Tabs>
-
-                <div className="rounded-lg bg-muted/50 p-4">
-                  <p className="text-sm font-medium mb-2">Available variables:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {["{{firstName}}", "{{username}}", "{{name}}"].map((variable) => (
-                      <code
-                        key={variable}
-                        className="px-2 py-1 bg-background rounded text-sm text-primary cursor-pointer hover:bg-primary/10"
-                      >
-                        {variable}
-                      </code>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Click to copy. Variables will be replaced with actual user data.
-                  </p>
-                </div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">First Message</h3>
+                <Button variant="outline" size="sm" onClick={addFollowUp}>
+                  <Plus className="mr-2 h-3 w-3" />
+                  Follow-up
+                </Button>
               </div>
 
-              {/* Follow-ups */}
-              {formData.followUps.map((followUp, index) => (
-                <div key={followUp.id} className="rounded-lg border border-border p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Follow-up {index + 1}</h4>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFollowUp(followUp.id)}
+              <Tabs defaultValue="variant-1" className="w-full">
+                <TabsList className="h-auto p-1 bg-secondary">
+                  {formData.variants.map((_, i) => (
+                    <TabsTrigger key={i} value={`variant-${i + 1}`} className="text-xs">
+                      V{i + 1}
+                    </TabsTrigger>
+                  ))}
+                  {formData.variants.length < 5 && (
+                    <button
+                      onClick={addVariant}
+                      className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      +
+                    </button>
+                  )}
+                </TabsList>
+
+                {formData.variants.map((variant, i) => (
+                  <TabsContent key={variant.id} value={`variant-${i + 1}`} className="mt-4">
+                    <Textarea
+                      placeholder="Write your message..."
+                      rows={5}
+                      value={variant.message}
+                      onChange={(e) => {
+                        const newVariants = [...formData.variants];
+                        newVariants[i].message = e.target.value;
+                        setFormData({ ...formData, variants: newVariants });
+                      }}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
+
+              <div className="flex flex-wrap gap-2">
+                {["{{firstName}}", "{{username}}", "{{name}}"].map((v) => (
+                  <code key={v} className="px-2 py-1 bg-secondary rounded text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
+                    {v}
+                  </code>
+                ))}
+              </div>
+
+              {formData.followUps.map((followUp, i) => (
+                <div key={followUp.id} className="rounded-xl border border-border p-4 space-y-4 animate-scale-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Follow-up {i + 1}</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFollowUp(followUp.id)}>
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Delay (hours)</Label>
-                    <Input
-                      type="number"
-                      value={followUp.delay}
-                      onChange={(e) => {
-                        const newFollowUps = [...formData.followUps];
-                        newFollowUps[index].delay = parseInt(e.target.value) || 0;
-                        setFormData({ ...formData, followUps: newFollowUps });
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Message</Label>
-                    <Textarea
-                      placeholder="Enter follow-up message..."
-                      rows={4}
-                      value={followUp.message}
-                      onChange={(e) => {
-                        const newFollowUps = [...formData.followUps];
-                        newFollowUps[index].message = e.target.value;
-                        setFormData({ ...formData, followUps: newFollowUps });
-                      }}
-                    />
+                  <div className="grid grid-cols-[100px_1fr] gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Delay (hrs)</Label>
+                      <Input
+                        type="number"
+                        value={followUp.delay}
+                        onChange={(e) => {
+                          const newFollowUps = [...formData.followUps];
+                          newFollowUps[i].delay = parseInt(e.target.value) || 0;
+                          setFormData({ ...formData, followUps: newFollowUps });
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Message</Label>
+                      <Textarea
+                        rows={2}
+                        value={followUp.message}
+                        onChange={(e) => {
+                          const newFollowUps = [...formData.followUps];
+                          newFollowUps[i].message = e.target.value;
+                          setFormData({ ...formData, followUps: newFollowUps });
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Step 4: Instagram Accounts */}
+          {/* Step 3: Accounts */}
+          {currentStep === 3 && (
+            <div className="space-y-4 animate-fade-in max-w-xl">
+              <p className="text-sm text-muted-foreground">Select accounts for this campaign</p>
+              {mockAccounts.map((account) => (
+                <label
+                  key={account.id}
+                  className={cn(
+                    "flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors",
+                    formData.selectedAccounts.includes(account.id)
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-muted-foreground/50"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={formData.selectedAccounts.includes(account.id)}
+                      onCheckedChange={() => toggleAccount(account.id)}
+                    />
+                    <span className="font-medium">{account.username}</span>
+                  </div>
+                  <span className={cn(
+                    "text-xs uppercase tracking-wider",
+                    account.status === "active" ? "text-success" : "text-warning"
+                  )}>
+                    {account.status}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          {/* Step 4: Done */}
           {currentStep === 4 && (
-            <div className="space-y-6 animate-fade-in">
-              <p className="text-sm text-muted-foreground">
-                Select the Instagram accounts to use for this campaign
-              </p>
-
-              <div className="rounded-lg border border-border overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-muted/30">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Select</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Username</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {mockAccounts.map((account) => (
-                      <tr key={account.id}>
-                        <td className="px-4 py-3">
-                          <Checkbox
-                            checked={formData.selectedAccounts.includes(account.id)}
-                            onCheckedChange={() => toggleAccount(account.id)}
-                          />
-                        </td>
-                        <td className="px-4 py-3 font-medium">{account.username}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                              account.status === "active"
-                                ? "bg-success/10 text-success"
-                                : "bg-warning/10 text-warning"
-                            )}
-                          >
-                            {account.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="text-center py-16 animate-fade-in">
+              <div className="mx-auto w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                <Check className="h-6 w-6 text-success" />
               </div>
+              <h2 className="text-xl font-semibold">All set!</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Your campaign is ready to launch.</p>
             </div>
           )}
 
-          {/* Step 5: Done */}
-          {currentStep === 5 && (
-            <div className="text-center py-12 animate-fade-in">
-              <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-8 w-8 text-success" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground">Campaign Created!</h2>
-              <p className="mt-2 text-muted-foreground">
-                Your campaign has been successfully created and is ready to launch.
-              </p>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-border">
-            <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
+          {/* Navigation */}
+          <div className="flex justify-between mt-10 pt-6 border-t border-border">
+            <Button variant="ghost" onClick={handleBack} disabled={currentStep === 0}>
               Back
             </Button>
             <Button onClick={handleNext}>
-              {currentStep === 5 ? "Go to Campaigns" : "Continue"}
+              {currentStep === steps.length - 1 ? "Finish" : "Continue"}
             </Button>
           </div>
         </div>

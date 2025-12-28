@@ -17,50 +17,48 @@ const mockTargets = [
   { id: 4, username: "@sarah_connor", campaign: "Product Launch", status: "messaged" },
   { id: 5, username: "@alex_brown", campaign: "Brand Awareness", status: "pending" },
   { id: 6, username: "@lisa_jones", campaign: "Customer Feedback", status: "replied" },
-  { id: 7, username: "@david_lee", campaign: "Influencer Collab", status: "pending" },
-  { id: 8, username: "@emma_white", campaign: "Product Launch", status: "messaged" },
 ];
-
-const campaigns = ["All Campaigns", "Product Launch", "Influencer Collab", "Brand Awareness", "Customer Feedback"];
 
 export default function Targets() {
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Targets" description="Manage your target users" />
+      <PageHeader title="Targets" />
 
-      <div className="p-8">
+      <div className="px-8 pb-8">
         <div className="mb-6">
-          <Select defaultValue="All Campaigns">
-            <SelectTrigger className="w-64">
+          <Select defaultValue="all">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Filter by campaign" />
             </SelectTrigger>
             <SelectContent>
-              {campaigns.map((campaign) => (
-                <SelectItem key={campaign} value={campaign}>
-                  {campaign}
-                </SelectItem>
-              ))}
+              <SelectItem value="all">All Campaigns</SelectItem>
+              <SelectItem value="product">Product Launch</SelectItem>
+              <SelectItem value="influencer">Influencer Collab</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-2xl bg-card shadow-soft overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Username</TableHead>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Status</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-xs uppercase tracking-wider">Username</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider">Campaign</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockTargets.map((target) => (
-                <TableRow key={target.id}>
-                  <TableCell className="font-medium">{target.username}</TableCell>
-                  <TableCell>{target.campaign}</TableCell>
+              {mockTargets.map((target, i) => (
+                <TableRow 
+                  key={target.id}
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${i * 30}ms` }}
+                >
+                  <TableCell className="font-medium font-mono text-sm">{target.username}</TableCell>
+                  <TableCell className="text-muted-foreground">{target.campaign}</TableCell>
                   <TableCell>
                     <StatusBadge variant={target.status as "pending" | "messaged" | "replied"}>
-                      {target.status.charAt(0).toUpperCase() + target.status.slice(1)}
+                      {target.status}
                     </StatusBadge>
                   </TableCell>
                 </TableRow>
