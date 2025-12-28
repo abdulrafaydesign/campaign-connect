@@ -13,101 +13,73 @@ import {
 } from "@/components/ui/table";
 
 const mockMessages = [
-  { id: 1, sentTo: "@john_doe", sentFrom: "@brand_official", campaign: "Product Launch", status: "delivered", date: "2024-01-15 10:30" },
-  { id: 2, sentTo: "@jane_smith", sentFrom: "@brand_official", campaign: "Product Launch", status: "sent", date: "2024-01-15 10:25" },
-  { id: 3, sentTo: "@mike_wilson", sentFrom: "@marketing_team", campaign: "Influencer Collab", status: "delivered", date: "2024-01-15 09:45" },
-  { id: 4, sentTo: "@sarah_connor", sentFrom: "@brand_official", campaign: "Product Launch", status: "failed", date: "2024-01-15 09:30" },
-  { id: 5, sentTo: "@alex_brown", sentFrom: "@sales_dept", campaign: "Brand Awareness", status: "delivered", date: "2024-01-14 16:20" },
-  { id: 6, sentTo: "@lisa_jones", sentFrom: "@brand_official", campaign: "Customer Feedback", status: "sent", date: "2024-01-14 15:10" },
+  { id: 1, sentTo: "@john_doe", sentFrom: "@brand_official", campaign: "Product Launch", status: "delivered", date: "Jan 15, 10:30" },
+  { id: 2, sentTo: "@jane_smith", sentFrom: "@brand_official", campaign: "Product Launch", status: "sent", date: "Jan 15, 10:25" },
+  { id: 3, sentTo: "@mike_wilson", sentFrom: "@marketing_team", campaign: "Influencer Collab", status: "delivered", date: "Jan 15, 09:45" },
+  { id: 4, sentTo: "@sarah_connor", sentFrom: "@brand_official", campaign: "Product Launch", status: "failed", date: "Jan 15, 09:30" },
+  { id: 5, sentTo: "@alex_brown", sentFrom: "@sales_dept", campaign: "Brand Awareness", status: "delivered", date: "Jan 14, 16:20" },
 ];
 
 export default function Messages() {
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Messages" description="View all sent messages" />
+      <PageHeader title="Messages" />
 
-      <div className="p-8">
+      <div className="px-8 pb-8">
         {/* Filters */}
-        <div className="mb-6 p-4 rounded-xl border border-border bg-card">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <Select defaultValue="any">
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="mb-6 flex flex-wrap gap-3">
+          <Select defaultValue="any">
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Any Status</SelectItem>
+              <SelectItem value="sent">Sent</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+            </SelectContent>
+          </Select>
 
-            <Select defaultValue="success">
-              <SelectTrigger>
-                <SelectValue placeholder="Message State" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="success">Success</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
+          <Select defaultValue="all">
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Campaign" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Campaigns</SelectItem>
+              <SelectItem value="product">Product Launch</SelectItem>
+              <SelectItem value="influencer">Influencer Collab</SelectItem>
+            </SelectContent>
+          </Select>
 
-            <Select defaultValue="any">
-              <SelectTrigger>
-                <SelectValue placeholder="Message Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any</SelectItem>
-                <SelectItem value="first">First Message</SelectItem>
-                <SelectItem value="followup">Follow-up</SelectItem>
-              </SelectContent>
-            </Select>
+          <Input placeholder="Search..." className="w-48" />
 
-            <Select defaultValue="all">
-              <SelectTrigger>
-                <SelectValue placeholder="Campaign" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Campaigns</SelectItem>
-                <SelectItem value="product">Product Launch</SelectItem>
-                <SelectItem value="influencer">Influencer Collab</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input placeholder="Sent To" />
-
-            <div className="flex gap-2">
-              <Button className="flex-1">Search</Button>
-              <Button variant="outline" className="flex-1">Reset</Button>
-            </div>
-          </div>
+          <Button variant="outline">Reset</Button>
         </div>
 
-        {/* Messages Table */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Table */}
+        <div className="rounded-2xl bg-card shadow-soft overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Sent To</TableHead>
-                <TableHead>Sent From</TableHead>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-xs uppercase tracking-wider">To</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider">From</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider">Campaign</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-xs uppercase tracking-wider">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockMessages.map((message) => (
-                <TableRow key={message.id}>
-                  <TableCell className="font-medium">{message.sentTo}</TableCell>
-                  <TableCell>{message.sentFrom}</TableCell>
-                  <TableCell>{message.campaign}</TableCell>
+              {mockMessages.map((m, i) => (
+                <TableRow key={m.id} className="animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
+                  <TableCell className="font-medium font-mono text-sm">{m.sentTo}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-sm">{m.sentFrom}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.campaign}</TableCell>
                   <TableCell>
-                    <StatusBadge variant={message.status as "sent" | "delivered" | "failed"}>
-                      {message.status.charAt(0).toUpperCase() + message.status.slice(1)}
+                    <StatusBadge variant={m.status as "sent" | "delivered" | "failed"}>
+                      {m.status}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{message.date}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{m.date}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

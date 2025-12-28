@@ -16,57 +16,52 @@ const initialLeads: Lead[] = [
   { id: 3, username: "@mike_wilson", campaign: "Influencer Collab", status: "responses" },
   { id: 4, username: "@sarah_connor", campaign: "Brand Awareness", status: "not-interested" },
   { id: 5, username: "@alex_brown", campaign: "Product Launch", status: "interested" },
-  { id: 6, username: "@lisa_jones", campaign: "Customer Feedback", status: "responses" },
 ];
 
 const columns = [
-  { id: "responses", title: "Responses", color: "bg-kanban-responses" },
-  { id: "interested", title: "Interested", color: "bg-kanban-interested" },
-  { id: "not-interested", title: "Not Interested", color: "bg-kanban-not-interested" },
+  { id: "responses", title: "Responses", accent: "bg-info" },
+  { id: "interested", title: "Interested", accent: "bg-success" },
+  { id: "not-interested", title: "Not Interested", accent: "bg-destructive" },
 ];
 
 export default function CRM() {
   const [leads, setLeads] = useState(initialLeads);
 
-  const updateLeadStatus = (leadId: number, newStatus: Lead["status"]) => {
-    setLeads(leads.map((lead) => (lead.id === leadId ? { ...lead, status: newStatus } : lead)));
+  const updateStatus = (id: number, status: Lead["status"]) => {
+    setLeads(leads.map((l) => (l.id === id ? { ...l, status } : l)));
   };
 
-  const getLeadsByStatus = (status: Lead["status"]) => leads.filter((lead) => lead.status === status);
+  const getLeads = (status: Lead["status"]) => leads.filter((l) => l.status === status);
 
   return (
     <div className="animate-fade-in h-screen flex flex-col">
-      <PageHeader title="CRM" description="Manage your leads pipeline" />
+      <PageHeader title="CRM" />
 
-      <div className="flex-1 p-8 overflow-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[600px]">
-          {columns.map((column) => (
-            <div key={column.id} className="flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-foreground">{column.title}</h3>
-                <span className="text-sm text-muted-foreground">
-                  {getLeadsByStatus(column.id as Lead["status"]).length}
+      <div className="flex-1 px-8 pb-8 overflow-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[500px]">
+          {columns.map((col) => (
+            <div key={col.id} className="flex flex-col">
+              <div className="flex items-center gap-2 mb-4">
+                <div className={cn("w-2 h-2 rounded-full", col.accent)} />
+                <h3 className="text-sm font-medium">{col.title}</h3>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {getLeads(col.id as Lead["status"]).length}
                 </span>
               </div>
 
-              <div
-                className={cn(
-                  "flex-1 rounded-xl border border-border p-4 space-y-3 overflow-y-auto",
-                  column.color
-                )}
-              >
-                {getLeadsByStatus(column.id as Lead["status"]).map((lead) => (
+              <div className="flex-1 rounded-2xl bg-secondary/50 p-3 space-y-2 overflow-y-auto">
+                {getLeads(col.id as Lead["status"]).map((lead) => (
                   <div
                     key={lead.id}
-                    className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow"
+                    className="bg-card rounded-xl p-4 shadow-soft hover-lift animate-scale-in"
                   >
-                    <div className="font-medium text-card-foreground mb-1">{lead.username}</div>
-                    <div className="text-sm text-muted-foreground mb-3">{lead.campaign}</div>
+                    <p className="font-medium text-sm mb-1">{lead.username}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{lead.campaign}</p>
                     <Select
                       value={lead.status}
-                      onValueChange={(value) => updateLeadStatus(lead.id, value as Lead["status"])}
+                      onValueChange={(v) => updateStatus(lead.id, v as Lead["status"])}
                     >
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -78,8 +73,8 @@ export default function CRM() {
                   </div>
                 ))}
 
-                {getLeadsByStatus(column.id as Lead["status"]).length === 0 && (
-                  <div className="text-center text-sm text-muted-foreground py-8">No leads</div>
+                {getLeads(col.id as Lead["status"]).length === 0 && (
+                  <div className="text-center text-xs text-muted-foreground py-8">Empty</div>
                 )}
               </div>
             </div>

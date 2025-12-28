@@ -7,9 +7,9 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-secondary/30">
       <AppSidebar />
-      <main className="pl-64">
+      <main className="pl-[220px]">
         <div className="min-h-screen">{children}</div>
       </main>
     </div>
