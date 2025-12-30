@@ -50,11 +50,45 @@ export type Database = {
           },
         ]
       }
+      campaign_settings: {
+        Row: {
+          auto_retry: boolean | null
+          created_at: string | null
+          id: string
+          max_retries: number | null
+          updated_at: string | null
+          user_id: string
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          auto_retry?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_retries?: number | null
+          updated_at?: string | null
+          user_id: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          auto_retry?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_retries?: number | null
+          updated_at?: string | null
+          user_id?: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       campaigns: {
         Row: {
           created_at: string | null
           description: string | null
           id: string
+          message_interval_seconds: number | null
           messages_per_day: number | null
           name: string
           status: string | null
@@ -67,6 +101,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          message_interval_seconds?: number | null
           messages_per_day?: number | null
           name: string
           status?: string | null
@@ -79,6 +114,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          message_interval_seconds?: number | null
           messages_per_day?: number | null
           name?: string
           status?: string | null
@@ -166,6 +202,79 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      message_queue: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          instagram_account_id: string | null
+          message_content: string
+          retry_count: number | null
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string | null
+          target_id: string
+          updated_at: string | null
+          user_id: string
+          webhook_response: Json | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          instagram_account_id?: string | null
+          message_content: string
+          retry_count?: number | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_id: string
+          updated_at?: string | null
+          user_id: string
+          webhook_response?: Json | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          instagram_account_id?: string | null
+          message_content?: string
+          retry_count?: number | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_id?: string
+          updated_at?: string | null
+          user_id?: string
+          webhook_response?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_queue_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_queue_instagram_account_id_fkey"
+            columns: ["instagram_account_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_queue_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -288,8 +397,11 @@ export type Database = {
         Row: {
           campaign_id: string | null
           created_at: string | null
+          error_message: string | null
           id: string
+          last_message_at: string | null
           list_name: string | null
+          retry_count: number | null
           status: string | null
           updated_at: string | null
           user_id: string
@@ -298,8 +410,11 @@ export type Database = {
         Insert: {
           campaign_id?: string | null
           created_at?: string | null
+          error_message?: string | null
           id?: string
+          last_message_at?: string | null
           list_name?: string | null
+          retry_count?: number | null
           status?: string | null
           updated_at?: string | null
           user_id: string
@@ -308,8 +423,11 @@ export type Database = {
         Update: {
           campaign_id?: string | null
           created_at?: string | null
+          error_message?: string | null
           id?: string
+          last_message_at?: string | null
           list_name?: string | null
+          retry_count?: number | null
           status?: string | null
           updated_at?: string | null
           user_id?: string
