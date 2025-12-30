@@ -55,6 +55,7 @@ export function useCreateCampaign() {
       working_hours_start: number;
       working_hours_end: number;
       messages_per_day: number;
+      start_immediately?: boolean;
     }) => {
       const { data: campaign, error } = await supabase
         .from("campaigns")
@@ -65,6 +66,7 @@ export function useCreateCampaign() {
           working_hours_start: data.working_hours_start,
           working_hours_end: data.working_hours_end,
           messages_per_day: data.messages_per_day,
+          status: data.start_immediately ? "active" : "draft",
         })
         .select()
         .single();
