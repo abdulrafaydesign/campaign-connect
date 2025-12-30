@@ -3,30 +3,40 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
-
-const stats = [
-  { title: "Campaigns", value: 12, icon: Megaphone },
-  { title: "Targets", value: "2,847", icon: Users },
-  { title: "Sent", value: "1,234", icon: Send },
-  { title: "Replies", value: 89, icon: MessageSquare },
-];
+import { useStats } from "@/hooks/useStats";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
+  const { data: stats, isLoading } = useStats();
+
+  const statItems = [
+    { title: "Campaigns", value: stats?.campaigns || 0, icon: Megaphone },
+    { title: "Targets", value: stats?.targets?.toLocaleString() || "0", icon: Users },
+    { title: "Sent", value: stats?.sent?.toLocaleString() || "0", icon: Send },
+    { title: "Replies", value: stats?.replies || 0, icon: MessageSquare },
+  ];
+
   return (
     <div className="animate-fade-in">
       <PageHeader title="Dashboard" />
       
       <div className="px-8 pb-8">
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat, i) => (
-            <div key={stat.title} style={{ animationDelay: `${i * 50}ms` }} className="animate-fade-in">
-              <StatCard
-                title={stat.title}
-                value={stat.value}
-                icon={stat.icon}
-              />
-            </div>
-          ))}
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-2xl" />
+            ))
+          ) : (
+            statItems.map((stat, i) => (
+              <div key={stat.title} style={{ animationDelay: `${i * 50}ms` }} className="animate-fade-in">
+                <StatCard
+                  title={stat.title}
+                  value={stat.value}
+                  icon={stat.icon}
+                />
+              </div>
+            ))
+          )}
         </div>
         
         <div className="mt-8 rounded-2xl bg-card p-8 shadow-soft">

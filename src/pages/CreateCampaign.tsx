@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Plus, Trash2, Upload } from "lucide-react";
+import { Check, Plus, Trash2, Upload, Loader2, Instagram } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,19 +9,28 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useCreateCampaign } from "@/hooks/useCampaigns";
+import { useInstagramAccounts, useAddInstagramAccount } from "@/hooks/useInstagramAccounts";
+import { useCreateTargets, useParseCSV } from "@/hooks/useTargets";
+import { useToast } from "@/hooks/use-toast";
 
 const steps = ["Settings", "Targets", "Sequences", "Accounts", "Done"];
 
-const mockAccounts = [
-  { id: 1, username: "@brand_official", status: "active" },
-  { id: 2, username: "@marketing_team", status: "active" },
-  { id: 3, username: "@sales_dept", status: "paused" },
-];
-
 export default function CreateCampaign() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [currentStep, setCurrentStep] = useState(0);
+  const [isCreating, setIsCreating] = useState(false);
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [csvUsernames, setCsvUsernames] = useState<string[]>([]);
+  const [addAccountOpen, setAddAccountOpen] = useState(false);
+  const [newAccountUsername, setNewAccountUsername] = useState("");
+  const [newAccountToken, setNewAccountToken] = useState("");
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -32,10 +41,76 @@ export default function CreateCampaign() {
     rawUsernames: "",
     variants: [{ id: 1, message: "" }],
     followUps: [] as { id: number; delay: number; message: string }[],
-    selectedAccounts: [] as number[],
+    selectedAccounts: [] as string[],
   });
 
-  const handleNext = () => {
+  const createCampaign = useCreateCampaign();
+  const createTargets = useCreateTargets();
+  const { data: instagramAccounts, isLoading: accountsLoading } = useInstagramAccounts();
+  const addAccount = useAddInstagramAccount();
+  const parseCSV = useParseCSV();
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const usernames = await parseCSV(file);
+      setCsvUsernames(usernames);
+      toast({ title: `Parsed ${usernames.length} usernames` });
+    } catch {
+      toast({ title: "Error parsing CSV", variant: "destructive" });
+    }
+  }, [parseCSV, toast]);
+
+  const handleNext = async () => {
+    if (currentStep === 0) {
+      if (!formData.name.trim()) {
+        toast({ title: "Please enter a campaign name", variant: "destructive" });
+        return;
+      }
+      
+      setIsCreating(true);
+      try {
+        const campaign = await createCampaign.mutateAsync({
+          name: formData.name,
+          description: formData.description,
+          working_hours_start: formData.workingHoursStart,
+          working_hours_end: formData.workingHoursEnd,
+          messages_per_day: formData.messagesPerDay[1],
+        });
+        setCampaignId(campaign.id);
+        setCurrentStep(1);
+      } catch {
+        toast({ title: "Error creating campaign", variant: "destructive" });
+      } finally {
+        setIsCreating(false);
+      }
+      return;
+    }
+
+    if (currentStep === 1) {
+      const usernames = csvUsernames.length > 0 
+        ? csvUsernames 
+        : formData.rawUsernames.split("\n").filter(Boolean);
+      
+      if (usernames.length > 0 && campaignId) {
+        setIsCreating(true);
+        try {
+          await createTargets.mutateAsync({
+            usernames,
+            campaign_id: campaignId,
+            list_name: formData.targetListName,
+          });
+          toast({ title: `Added ${usernames.length} targets` });
+        } catch {
+          toast({ title: "Error adding targets", variant: "destructive" });
+        } finally {
+          setIsCreating(false);
+        }
+      }
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -70,7 +145,7 @@ export default function CreateCampaign() {
     });
   };
 
-  const toggleAccount = (accountId: number) => {
+  const toggleAccount = (accountId: string) => {
     setFormData({
       ...formData,
       selectedAccounts: formData.selectedAccounts.includes(accountId)
@@ -79,17 +154,38 @@ export default function CreateCampaign() {
     });
   };
 
+  const handleAddAccount = async () => {
+    if (!newAccountUsername.trim()) {
+      toast({ title: "Please enter a username", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await addAccount.mutateAsync({
+        username: newAccountUsername.replace(/^@/, ""),
+        session_token: newAccountToken || undefined,
+      });
+      toast({ title: "Instagram account added" });
+      setNewAccountUsername("");
+      setNewAccountToken("");
+      setAddAccountOpen(false);
+    } catch {
+      toast({ title: "Error adding account", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       <PageHeader title="New Campaign" />
 
       <div className="px-8 pb-8">
-        {/* Minimal Stepper */}
+        {/* Stepper */}
         <div className="mb-8 flex items-center gap-2">
           {steps.map((step, i) => (
             <div key={step} className="flex items-center">
               <button
                 onClick={() => i < currentStep && setCurrentStep(i)}
+                disabled={i > currentStep}
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                   i === currentStep
@@ -184,7 +280,7 @@ export default function CreateCampaign() {
           {/* Step 1: Targets */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fade-in">
-              <Tabs defaultValue="raw" className="w-full">
+              <Tabs defaultValue="csv" className="w-full">
                 <TabsList className="grid w-full max-w-md grid-cols-3">
                   <TabsTrigger value="csv">CSV</TabsTrigger>
                   <TabsTrigger value="raw">RAW</TabsTrigger>
@@ -192,9 +288,47 @@ export default function CreateCampaign() {
                 </TabsList>
 
                 <TabsContent value="csv" className="space-y-4 mt-6">
-                  <div className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                  >
                     <Upload className="h-8 w-8 mx-auto text-muted-foreground" strokeWidth={1.5} />
-                    <p className="mt-3 text-sm text-muted-foreground">Drop CSV here or click to upload</p>
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      {csvUsernames.length > 0 
+                        ? `${csvUsernames.length} usernames loaded` 
+                        : "Drop CSV here or click to upload"}
+                    </p>
+                  </div>
+                  {csvUsernames.length > 0 && (
+                    <div className="max-h-48 overflow-auto rounded-lg border border-border p-4">
+                      <div className="grid grid-cols-3 gap-2">
+                        {csvUsernames.slice(0, 15).map((username, i) => (
+                          <span key={i} className="text-xs font-mono bg-secondary px-2 py-1 rounded">
+                            @{username}
+                          </span>
+                        ))}
+                        {csvUsernames.length > 15 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{csvUsernames.length - 15} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-2 max-w-sm">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">List Name</Label>
+                    <Input
+                      placeholder="My target list"
+                      value={formData.targetListName}
+                      onChange={(e) => setFormData({ ...formData, targetListName: e.target.value })}
+                    />
                   </div>
                 </TabsContent>
 
@@ -323,32 +457,92 @@ export default function CreateCampaign() {
           {/* Step 3: Accounts */}
           {currentStep === 3 && (
             <div className="space-y-4 animate-fade-in max-w-xl">
-              <p className="text-sm text-muted-foreground">Select accounts for this campaign</p>
-              {mockAccounts.map((account) => (
-                <label
-                  key={account.id}
-                  className={cn(
-                    "flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors",
-                    formData.selectedAccounts.includes(account.id)
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-muted-foreground/50"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={formData.selectedAccounts.includes(account.id)}
-                      onCheckedChange={() => toggleAccount(account.id)}
-                    />
-                    <span className="font-medium">{account.username}</span>
-                  </div>
-                  <span className={cn(
-                    "text-xs uppercase tracking-wider",
-                    account.status === "active" ? "text-success" : "text-warning"
-                  )}>
-                    {account.status}
-                  </span>
-                </label>
-              ))}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Select accounts for this campaign</p>
+                <Dialog open={addAccountOpen} onOpenChange={setAddAccountOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Instagram className="mr-2 h-4 w-4" />
+                      Add Account
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Connect Instagram Account</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Username</Label>
+                        <Input
+                          placeholder="@yourusername"
+                          value={newAccountUsername}
+                          onChange={(e) => setNewAccountUsername(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                          Session Token (optional)
+                        </Label>
+                        <Input
+                          type="password"
+                          placeholder="Instagram session token"
+                          value={newAccountToken}
+                          onChange={(e) => setNewAccountToken(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          For automated messaging, you'll need a session token
+                        </p>
+                      </div>
+                      <Button onClick={handleAddAccount} disabled={addAccount.isPending} className="w-full">
+                        {addAccount.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Add Account
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {accountsLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="h-16 bg-secondary/50 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : instagramAccounts?.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-border rounded-xl">
+                  <Instagram className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+                  <p className="text-sm text-muted-foreground">No Instagram accounts connected</p>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={() => setAddAccountOpen(true)}>
+                    Connect Account
+                  </Button>
+                </div>
+              ) : (
+                instagramAccounts?.map((account) => (
+                  <label
+                    key={account.id}
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors",
+                      formData.selectedAccounts.includes(account.id)
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={formData.selectedAccounts.includes(account.id)}
+                        onCheckedChange={() => toggleAccount(account.id)}
+                      />
+                      <span className="font-medium font-mono">@{account.username}</span>
+                    </div>
+                    <span className={cn(
+                      "text-xs uppercase tracking-wider",
+                      account.status === "connected" ? "text-success" : "text-warning"
+                    )}>
+                      {account.status}
+                    </span>
+                  </label>
+                ))
+              )}
             </div>
           )}
 
@@ -368,7 +562,8 @@ export default function CreateCampaign() {
             <Button variant="ghost" onClick={handleBack} disabled={currentStep === 0}>
               Back
             </Button>
-            <Button onClick={handleNext}>
+            <Button onClick={handleNext} disabled={isCreating}>
+              {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {currentStep === steps.length - 1 ? "Finish" : "Continue"}
             </Button>
           </div>
