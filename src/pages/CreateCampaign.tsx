@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Plus, Trash2, Upload, Loader2, Instagram } from "lucide-react";
+import { Check, Plus, Trash2, Upload, Loader2, Instagram, Zap, Clock, AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import { useCreateCampaign } from "@/hooks/useCampaigns";
 import { useInstagramAccounts, useAddInstagramAccount } from "@/hooks/useInstagramAccounts";
 import { useCreateTargets, useParseCSV } from "@/hooks/useTargets";
 import { useToast } from "@/hooks/use-toast";
+
+const INSTAGRAM_USERNAME_REGEX = /^[a-zA-Z0-9._]{1,30}$/;
+
+const validateUsername = (username: string): { valid: boolean; error?: string } => {
+  const cleaned = username.trim().replace(/^@/, "");
+  if (!cleaned) return { valid: false, error: "Username cannot be empty" };
+  if (cleaned.length > 30) return { valid: false, error: "Username too long (max 30 chars)" };
+  if (!INSTAGRAM_USERNAME_REGEX.test(cleaned)) {
+    return { valid: false, error: "Invalid characters (only letters, numbers, . and _ allowed)" };
+  }
+  return { valid: true };
+};
 
 const steps = ["Settings", "Targets", "Sequences", "Accounts", "Done"];
 
@@ -37,6 +50,8 @@ export default function CreateCampaign() {
     workingHoursStart: 8,
     workingHoursEnd: 22,
     messagesPerDay: [35, 45],
+    messageInterval: 60, // seconds between messages
+    startImmediately: false,
     targetListName: "",
     rawUsernames: "",
     variants: [{ id: 1, message: "" }],
@@ -44,11 +59,30 @@ export default function CreateCampaign() {
     selectedAccounts: [] as string[],
   });
 
+  const [usernameErrors, setUsernameErrors] = useState<string[]>([]);
+
   const createCampaign = useCreateCampaign();
   const createTargets = useCreateTargets();
   const { data: instagramAccounts, isLoading: accountsLoading } = useInstagramAccounts();
   const addAccount = useAddInstagramAccount();
   const parseCSV = useParseCSV();
+
+  // Validate usernames and collect errors
+  const validateUsernames = useCallback((usernames: string[]): { valid: string[]; errors: string[] } => {
+    const valid: string[] = [];
+    const errors: string[] = [];
+    
+    usernames.forEach((username) => {
+      const result = validateUsername(username);
+      if (result.valid) {
+        valid.push(username.trim().replace(/^@/, ""));
+      } else {
+        errors.push(`@${username.trim()}: ${result.error}`);
+      }
+    });
+    
+    return { valid, errors };
+  }, []);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,12 +90,23 @@ export default function CreateCampaign() {
 
     try {
       const usernames = await parseCSV(file);
-      setCsvUsernames(usernames);
-      toast({ title: `Parsed ${usernames.length} usernames` });
+      const { valid, errors } = validateUsernames(usernames);
+      setCsvUsernames(valid);
+      setUsernameErrors(errors);
+      
+      if (errors.length > 0) {
+        toast({ 
+          title: `Parsed ${valid.length} valid usernames`,
+          description: `${errors.length} invalid usernames skipped`,
+          variant: errors.length === usernames.length ? "destructive" : "default"
+        });
+      } else {
+        toast({ title: `Parsed ${valid.length} usernames` });
+      }
     } catch {
       toast({ title: "Error parsing CSV", variant: "destructive" });
     }
-  }, [parseCSV, toast]);
+  }, [parseCSV, toast, validateUsernames]);
 
   const handleNext = async () => {
     if (currentStep === 0) {
@@ -78,6 +123,7 @@ export default function CreateCampaign() {
           working_hours_start: formData.workingHoursStart,
           working_hours_end: formData.workingHoursEnd,
           messages_per_day: formData.messagesPerDay[1],
+          start_immediately: formData.startImmediately,
         });
         setCampaignId(campaign.id);
         setCurrentStep(1);
@@ -90,19 +136,38 @@ export default function CreateCampaign() {
     }
 
     if (currentStep === 1) {
-      const usernames = csvUsernames.length > 0 
+      const rawUsernames = csvUsernames.length > 0 
         ? csvUsernames 
         : formData.rawUsernames.split("\n").filter(Boolean);
       
-      if (usernames.length > 0 && campaignId) {
+      // Validate all usernames
+      const { valid, errors } = validateUsernames(rawUsernames);
+      
+      if (errors.length > 0) {
+        setUsernameErrors(errors);
+        toast({ 
+          title: "Invalid usernames detected", 
+          description: `Please fix ${errors.length} invalid username(s)`,
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      if (valid.length === 0) {
+        toast({ title: "Please add at least one target username", variant: "destructive" });
+        return;
+      }
+      
+      if (campaignId) {
         setIsCreating(true);
         try {
           await createTargets.mutateAsync({
-            usernames,
+            usernames: valid,
             campaign_id: campaignId,
             list_name: formData.targetListName,
           });
-          toast({ title: `Added ${usernames.length} targets` });
+          setUsernameErrors([]);
+          toast({ title: `Added ${valid.length} targets` });
         } catch {
           toast({ title: "Error adding targets", variant: "destructive" });
         } finally {
@@ -274,6 +339,56 @@ export default function CreateCampaign() {
                   </span>
                 </div>
               </div>
+
+              <div className="space-y-3">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                  <Clock className="inline h-3 w-3 mr-1" />
+                  Time Interval Between Messages
+                </Label>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-mono bg-secondary px-2 py-1 rounded min-w-[60px] text-center">
+                    {formData.messageInterval}s
+                  </span>
+                  <Slider
+                    value={[formData.messageInterval]}
+                    onValueChange={([value]) => setFormData({ ...formData, messageInterval: value })}
+                    min={30}
+                    max={300}
+                    step={10}
+                    className="flex-1"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {Math.floor(formData.messageInterval / 60)}m {formData.messageInterval % 60}s
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Delay between sending each message (30s - 5min recommended)
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-secondary/30">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "p-2 rounded-lg",
+                    formData.startImmediately ? "bg-success/10" : "bg-muted"
+                  )}>
+                    <Zap className={cn(
+                      "h-4 w-4",
+                      formData.startImmediately ? "text-success" : "text-muted-foreground"
+                    )} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium cursor-pointer">Start Immediately</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Begin sending messages as soon as campaign is created
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={formData.startImmediately}
+                  onCheckedChange={(checked) => setFormData({ ...formData, startImmediately: checked })}
+                />
+              </div>
             </div>
           )}
 
@@ -336,11 +451,17 @@ export default function CreateCampaign() {
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">Usernames</Label>
                     <Textarea
-                      placeholder="One username per line"
+                      placeholder="One username per line&#10;@johndoe&#10;@janedoe&#10;user123"
                       rows={8}
-                      className="font-mono text-sm"
+                      className={cn(
+                        "font-mono text-sm",
+                        usernameErrors.length > 0 && "border-destructive"
+                      )}
                       value={formData.rawUsernames}
-                      onChange={(e) => setFormData({ ...formData, rawUsernames: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, rawUsernames: e.target.value });
+                        setUsernameErrors([]); // Clear errors on edit
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
@@ -360,6 +481,30 @@ export default function CreateCampaign() {
                   </div>
                 </TabsContent>
               </Tabs>
+
+              {/* Username Validation Errors */}
+              {usernameErrors.length > 0 && (
+                <div className="mt-4 p-4 rounded-xl border border-destructive/50 bg-destructive/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <span className="text-sm font-medium text-destructive">
+                      {usernameErrors.length} Invalid Username{usernameErrors.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <ul className="space-y-1 max-h-32 overflow-auto">
+                    {usernameErrors.slice(0, 10).map((error, i) => (
+                      <li key={i} className="text-xs text-muted-foreground font-mono">
+                        {error}
+                      </li>
+                    ))}
+                    {usernameErrors.length > 10 && (
+                      <li className="text-xs text-muted-foreground">
+                        +{usernameErrors.length - 10} more errors...
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
