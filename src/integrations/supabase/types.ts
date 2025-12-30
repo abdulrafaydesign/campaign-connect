@@ -14,7 +14,317 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaign_instagram_accounts: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          instagram_account_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          instagram_account_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          instagram_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_instagram_accounts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_instagram_accounts_instagram_account_id_fkey"
+            columns: ["instagram_account_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          messages_per_day: number | null
+          name: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          working_hours_end: number | null
+          working_hours_start: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          messages_per_day?: number | null
+          name: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          working_hours_end?: number | null
+          working_hours_start?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          messages_per_day?: number | null
+          name?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          working_hours_end?: number | null
+          working_hours_start?: number | null
+        }
+        Relationships: []
+      }
+      crm_leads: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          status: string | null
+          target_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          target_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          target_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instagram_accounts: {
+        Row: {
+          created_at: string | null
+          id: string
+          session_token: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          session_token?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          session_token?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          campaign_id: string | null
+          content: string
+          id: string
+          instagram_account_id: string | null
+          sent_at: string | null
+          status: string | null
+          target_id: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          content: string
+          id?: string
+          instagram_account_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_id?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          content?: string
+          id?: string
+          instagram_account_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_instagram_account_id_fkey"
+            columns: ["instagram_account_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sequences: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          delay_hours: number | null
+          id: string
+          message: string
+          message_order: number | null
+          variant: number | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          delay_hours?: number | null
+          id?: string
+          message: string
+          message_order?: number | null
+          variant?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          delay_hours?: number | null
+          id?: string
+          message?: string
+          message_order?: number | null
+          variant?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sequences_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      targets: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          id: string
+          list_name: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          list_name?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          list_name?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "targets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
