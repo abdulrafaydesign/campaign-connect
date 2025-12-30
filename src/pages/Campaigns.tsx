@@ -1,4 +1,5 @@
-import { Plus, MoreHorizontal, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Plus, MoreHorizontal, Play, Pause, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -16,23 +17,47 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useCampaigns, useUpdateCampaignStatus, useDeleteCampaign } from "@/hooks/useCampaigns";
+import { useStartCampaign, usePauseCampaign, useAutoProcessor } from "@/hooks/useMessageQueue";
 import { useToast } from "@/hooks/use-toast";
+import { CampaignProgress } from "@/components/CampaignProgress";
+import { MessageQueueList } from "@/components/MessageQueueList";
 
 export default function Campaigns() {
   const { data: campaigns, isLoading } = useCampaigns();
   const updateStatus = useUpdateCampaignStatus();
   const deleteCampaign = useDeleteCampaign();
+  const startCampaign = useStartCampaign();
+  const pauseCampaign = usePauseCampaign();
   const { toast } = useToast();
+  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
 
-  const handleStatusChange = async (id: string, status: string) => {
+  // Auto-process queue when any campaign is active
+  const hasActiveCampaign = campaigns?.some(c => c.status === "active");
+  useAutoProcessor(hasActiveCampaign || false);
+
+  const handleStart = async (id: string) => {
     try {
-      await updateStatus.mutateAsync({ id, status });
-      toast({ title: `Campaign ${status}` });
+      await startCampaign.mutateAsync(id);
     } catch {
-      toast({ title: "Error updating campaign", variant: "destructive" });
+      toast({ title: "Error starting campaign", variant: "destructive" });
+    }
+  };
+
+  const handlePause = async (id: string) => {
+    try {
+      await pauseCampaign.mutateAsync(id);
+    } catch {
+      toast({ title: "Error pausing campaign", variant: "destructive" });
     }
   };
 
@@ -80,6 +105,7 @@ export default function Campaigns() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="text-xs uppercase tracking-wider">Name</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider">Progress</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider">Targets</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider w-12"></TableHead>
                 </TableRow>
@@ -97,35 +123,63 @@ export default function Campaigns() {
                         {campaign.status}
                       </StatusBadge>
                     </TableCell>
+                    <TableCell className="min-w-[200px]">
+                      <CampaignProgress campaignId={campaign.id} />
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {(campaign.targets_count || 0).toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-32">
-                          {campaign.status !== "active" && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(campaign.id, "active")}>
-                              Activate
-                            </DropdownMenuItem>
-                          )}
-                          {campaign.status === "active" && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(campaign.id, "paused")}>
-                              Pause
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => handleDelete(campaign.id)}
+                      <div className="flex items-center gap-1">
+                        {campaign.status !== "active" ? (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => handleStart(campaign.id)}
+                            disabled={startCampaign.isPending}
                           >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => handlePause(campaign.id)}
+                            disabled={pauseCampaign.isPending}
+                          >
+                            <Pause className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => setSelectedCampaign(campaign.id)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-32">
+                            <DropdownMenuItem onClick={() => setSelectedCampaign(campaign.id)}>
+                              View Queue
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => handleDelete(campaign.id)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -134,6 +188,21 @@ export default function Campaigns() {
           )}
         </div>
       </div>
+
+      {/* Message Queue Dialog */}
+      <Dialog open={!!selectedCampaign} onOpenChange={() => setSelectedCampaign(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message Queue</DialogTitle>
+          </DialogHeader>
+          {selectedCampaign && (
+            <div className="space-y-4">
+              <CampaignProgress campaignId={selectedCampaign} />
+              <MessageQueueList campaignId={selectedCampaign} maxHeight="400px" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
